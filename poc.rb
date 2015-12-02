@@ -29,7 +29,8 @@ class Babel
 
   def add_brick
     @index += 1
-    @tower.unshift Brick.new(@index)
+    pre_offset = @tower.first ? @tower.first.offset : 0
+    @tower.unshift Brick.new(@index, pre_offset)
     check_balance
   end
 
@@ -42,7 +43,7 @@ class Babel
 
   def to_s
     str = @tower.join("\n") + "\n"
-    str += "collapsed: " + @rewards.collect{|arr| arr.flatten.map(&:id).join(",") }.join(" | ") if @rewards.size > 0
+    #str += "collapsed: " + @rewards.collect{|arr| arr.flatten.map(&:id).join(",") }.join(" | ") if @rewards.size > 0
     str
   end
 end
@@ -50,30 +51,31 @@ end
 class Brick
   attr_reader :offset, :id
 
-  def initialize(id)
+  def initialize(id, pre_offset = 0)
     @eth_hold = 1
     @id = id.to_s
-    set_position
+    set_position(pre_offset)
   end
 
-  def set_position
-    @offset = rand * 10
+  def set_position(pre_offset)
+    @offset = (0.5 - rand) * 5 + pre_offset
   end
 
   def to_s
-    @id.rjust(4, ' ') + ' ' * @offset + '=' * 11
+    @id.rjust(4, ' ') + ' ' * (50 + @offset) + '=' * 11
   end
 end
 
 babel = Babel.new
 height = 0
-(1..10000).each do
+(1..1000).each do
   babel.add_brick
   #puts babel.to_s
   #puts '-' * 80
   height = babel.tower.length if height < babel.tower.length
   #STDIN.getch
 end
+puts babel.to_s
 
 puts height
 puts babel.tower.length
