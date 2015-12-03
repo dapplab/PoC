@@ -24,7 +24,11 @@ class Babel
         cg = (cg * index + brick.offset).to_f / (index + 1)
       end
     end
-    collapse!(collapse_index) if collapse_index > 0
+    if collapse_index > 0
+      collapse!(collapse_index)
+    else
+      soak!
+    end
   end
 
   def add_brick
@@ -41,6 +45,24 @@ class Babel
     @rewards << @tower.shift(index)
   end
 
+  def soak!
+    amount = @tower.first.eth_hold
+    percent = 0.5
+    @tower.first.eth_hold = 0
+
+    @tower[1..-1].each do |brick|
+      if(amount > 0.000000000000000001)
+        brick.eth_hold += amount * percent
+        amount *= (1-percent)
+      else
+        brick.eth_hold += amount
+        amount = 0
+        break
+      end
+    end
+    @tower.last.eth_hold += amount if amount > 0
+  end
+
   def to_s
     str = @tower.join("\n") + "\n"
     #str += "collapsed: " + @rewards.collect{|arr| arr.flatten.map(&:id).join(",") }.join(" | ") if @rewards.size > 0
@@ -50,6 +72,7 @@ end
 
 class Brick
   attr_reader :offset, :id
+  attr_accessor :eth_hold
 
   def initialize(id, pre_offset = 0)
     @eth_hold = 1
@@ -62,7 +85,7 @@ class Brick
   end
 
   def to_s
-    @id.rjust(4, ' ') + ' ' * (50 + @offset) + '=' * 11
+    @id.rjust(4, ' ') + '    ' + @eth_hold.to_s.ljust(20, ' ') + ' ' * (50 + @offset) + '=' * 11
   end
 end
 
@@ -70,10 +93,10 @@ babel = Babel.new
 height = 0
 (1..1000).each do
   babel.add_brick
-  #puts babel.to_s
-  #puts '-' * 80
+  puts babel.to_s
+  puts '-' * 80
   height = babel.tower.length if height < babel.tower.length
-  #STDIN.getch
+  STDIN.getch
 end
 puts babel.to_s
 
