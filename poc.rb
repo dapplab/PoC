@@ -1,33 +1,45 @@
 require 'io/console'
+$brick_width = 2 ** 30
+
 class Babel
-  attr_reader :tower, :brick_width
+  attr_reader :tower
   attr_accessor :index, :rewards
 
   def initialize
     @tower = []
     @rewards = []
     @index = 0
-    @brick_width = 11.0
   end
 
   def check_balance
     cg = 0
+    maxcg = 0
     collapse_index = 0
     @tower.each_with_index do |brick, index|
       if index == 0
         cg = brick.offset
       else
-        if (cg - brick.offset).abs > @brick_width / 2
+        if (cg - brick.offset).abs > $brick_width / 2
           collapse_index = index
           break if index == 1 # jump out the balance check if it's the topest brick and not in the range
         end
-        cg = (cg * index + brick.offset).to_f / (index + 1)
+        cg = (cg * index + brick.offset) / (index + 1)
+
+        diff = (cg - @tower.last.offset).abs
+        maxcg = diff if diff > maxcg
       end
     end
+
     if collapse_index > 0
       collapse!(collapse_index)
     else
       soak!
+
+      if maxcg > $brick_width * 3 / 2
+        p maxcg, @tower.last
+        puts self.to_s
+        raise "error"
+      end
     end
   end
 
@@ -81,22 +93,22 @@ class Brick
   end
 
   def set_position(pre_offset)
-    @offset = (0.5 - rand) * 5 + pre_offset
+    @offset = ((0.5 - rand) * 0.5 * $brick_width).to_i + pre_offset
   end
 
   def to_s
-    @id.rjust(4, ' ') + '    ' + @eth_hold.to_s.ljust(20, ' ') + ' ' * (50 + @offset) + '=' * 11
+    @id.rjust(4, ' ') + '    ' + @eth_hold.to_s.ljust(20, ' ') + ' ' * (20 +  10 * @offset / $brick_width ) + '=' * 10
   end
 end
 
 babel = Babel.new
 height = 0
-(1..1000).each do
+(1..100000).each do
   babel.add_brick
-  puts babel.to_s
-  puts '-' * 80
+  #puts babel.to_s
+  #puts '-' * 80
   height = babel.tower.length if height < babel.tower.length
-  STDIN.getch
+  #STDIN.getch
 end
 puts babel.to_s
 
